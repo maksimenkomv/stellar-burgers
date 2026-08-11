@@ -1,4 +1,8 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import {
+  createAsyncThunk,
+  createSelector,
+  createSlice
+} from '@reduxjs/toolkit';
 import { getIngredientsApi } from '@api';
 import { TIngredient } from '@utils-types';
 import { RootState } from '../store';
@@ -53,7 +57,12 @@ export const {
   selectIngredientsError
 } = ingredientsSlice.selectors;
 
-export const selectIngredientById = (id: string) => (state: RootState) =>
-  state.ingredients.items.find((item) => item._id === id);
+// Мемоизированный параметризованный селектор: принимает (state, id) вместо
+// фабрики, создающей новую функцию-селектор на каждый вызов, поэтому
+// reselect может закэшировать результат между рендерами.
+export const selectIngredientById = createSelector(
+  [selectIngredients, (_state: RootState, id: string) => id],
+  (items, id) => items.find((item) => item._id === id)
+);
 
 export default ingredientsSlice.reducer;

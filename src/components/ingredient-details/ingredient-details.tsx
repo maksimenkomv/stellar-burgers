@@ -7,7 +7,9 @@ import { selectIngredientById } from '../../services/selectors';
 
 export const IngredientDetails: FC = () => {
   const { id } = useParams<{ id: string }>();
-  const ingredientData = useSelector(selectIngredientById(id ?? ''));
+  const ingredientData = useSelector((state) =>
+    selectIngredientById(state, id ?? '')
+  );
 
   if (!ingredientData) {
     return <Preloader />;

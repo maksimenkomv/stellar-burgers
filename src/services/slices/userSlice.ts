@@ -63,9 +63,15 @@ export const checkUserAuth = createAsyncThunk(
 );
 
 export const logoutUser = createAsyncThunk('user/logout', async () => {
-  await logoutApi();
-  deleteCookie('accessToken');
-  localStorage.removeItem('refreshToken');
+  try {
+    await logoutApi();
+  } finally {
+    // Токены и пользователя сбрасываем локально в любом случае: если
+    // запрос на сервер не прошёл (сеть, истёкший токен и т.п.), это не
+    // должно оставлять пользователя «залипшим» в залогиненном состоянии.
+    deleteCookie('accessToken');
+    localStorage.removeItem('refreshToken');
+  }
 });
 
 export const updateUser = createAsyncThunk(
@@ -120,6 +126,11 @@ const userSlice = createSlice({
         state.user = null;
       })
       .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        // Локальные токены уже сброшены в finally самого thunk'а —
+        // синхронизируем стор, даже если запрос к серверу завершился ошибкой.
         state.user = null;
       })
       .addCase(updateUser.pending, (state) => {

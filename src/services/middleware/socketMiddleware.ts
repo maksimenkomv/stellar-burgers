@@ -22,6 +22,16 @@ export const socketMiddleware = <TPayload>(
       wsActions;
 
     if (connect.match(action)) {
+      if (socket) {
+        // Закрываем предыдущее соединение и снимаем с него обработчики,
+        // чтобы его отложенный onclose не затёр состояние нового сокета.
+        socket.onopen = null;
+        socket.onerror = null;
+        socket.onmessage = null;
+        socket.onclose = null;
+        socket.close();
+      }
+
       socket = new WebSocket(action.payload);
 
       socket.onopen = () => {

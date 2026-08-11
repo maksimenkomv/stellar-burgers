@@ -1,5 +1,4 @@
 import { FC, SyntheticEvent, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { LoginUI } from '@ui-pages';
 import { useDispatch, useSelector } from '../../services/store';
 import { selectLoginError } from '../../services/selectors';
@@ -10,20 +9,14 @@ export const Login: FC = () => {
   const [password, setPassword] = useState('');
 
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
   const errorText = useSelector(selectLoginError);
 
+  // Редирект после входа делает ProtectedRoute (onlyUnAuth): как только
+  // пользователь появляется в сторе, он сам перенаправит на from ?? '/'.
+  // Ручной navigate() здесь давал гонку из двух редиректов подряд.
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
-    dispatch(loginUser({ email, password })).then((action) => {
-      if (loginUser.fulfilled.match(action)) {
-        const from =
-          (location.state as { from?: { pathname: string } } | null)?.from ??
-          '/';
-        navigate(from, { replace: true });
-      }
-    });
+    dispatch(loginUser({ email, password }));
   };
 
   return (

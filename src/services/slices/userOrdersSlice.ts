@@ -1,72 +1,31 @@
-import { createAction, createSlice } from '@reduxjs/toolkit';
-import { TWsOrdersData } from './feedSlice';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { getOrdersApi } from '@api';
+import { createLiveOrdersSlice } from './createLiveOrdersSlice';
 
-type TUserOrdersState = {
-  orders: TWsOrdersData['orders'];
-  isConnected: boolean;
-  error: string | null;
-};
-
-const initialState: TUserOrdersState = {
-  orders: [],
-  isConnected: false,
-  error: null
-};
-
-export const userOrdersConnect = createAction<string>('userOrders/connect');
-export const userOrdersDisconnect = createAction('userOrders/disconnect');
-const userOrdersConnectionSuccess = createAction(
-  'userOrders/connectionSuccess'
-);
-const userOrdersConnectionClosed = createAction('userOrders/connectionClosed');
-const userOrdersConnectionError = createAction<string>(
-  'userOrders/connectionError'
-);
-const userOrdersGetMessage = createAction<TWsOrdersData>(
-  'userOrders/getMessage'
+// REST-запрос истории заказов пользователя. getOrdersApi уже обёрнут в
+// fetchWithRefresh, поэтому именно он отвечает за обновление токена перед
+// открытием WebSocket-соединения (см. profile-orders.tsx).
+export const fetchUserOrders = createAsyncThunk('userOrders/fetch', async () =>
+  getOrdersApi()
 );
 
-export const userOrdersWsActions = {
-  connect: userOrdersConnect,
-  disconnect: userOrdersDisconnect,
-  onOpen: userOrdersConnectionSuccess,
-  onClose: userOrdersConnectionClosed,
-  onError: userOrdersConnectionError,
-  onMessage: userOrdersGetMessage
-};
-
-const userOrdersSlice = createSlice({
-  name: 'userOrders',
-  initialState,
-  reducers: {},
-  selectors: {
-    selectUserOrders: (state) => state.orders,
-    selectUserOrdersIsConnected: (state) => state.isConnected,
-    selectUserOrdersError: (state) => state.error
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(userOrdersConnectionSuccess, (state) => {
-        state.isConnected = true;
-        state.error = null;
-      })
-      .addCase(userOrdersConnectionClosed, (state) => {
-        state.isConnected = false;
-      })
-      .addCase(userOrdersConnectionError, (state, action) => {
-        state.isConnected = false;
-        state.error = action.payload;
-      })
-      .addCase(userOrdersGetMessage, (state, action) => {
-        state.orders = action.payload.orders;
-      });
+const { slice, connect, disconnect, wsActions } = createLiveOrdersSlice(
+  'userOrders',
+  (builder) => {
+    builder.addCase(fetchUserOrders.fulfilled, (state, action) => {
+      state.orders = action.payload;
+    });
   }
-});
+);
+
+export const userOrdersConnect = connect;
+export const userOrdersDisconnect = disconnect;
+export const userOrdersWsActions = wsActions;
 
 export const {
-  selectUserOrders,
-  selectUserOrdersIsConnected,
-  selectUserOrdersError
-} = userOrdersSlice.selectors;
+  selectOrders: selectUserOrders,
+  selectIsConnected: selectUserOrdersIsConnected,
+  selectError: selectUserOrdersError
+} = slice.selectors;
 
-export default userOrdersSlice.reducer;
+export default slice.reducer;
