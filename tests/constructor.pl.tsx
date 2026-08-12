@@ -32,6 +32,13 @@ const addIngredientByCard = async (page: Page, id: string) => {
 const modal = (page: Page) => page.locator('#modals > div').first();
 const overlay = (page: Page) => page.locator('#modals > div').last();
 
+// Название ингредиента в списке ингредиентов и в конструкторе — один и тот
+// же текст, поэтому для проверки содержимого конструктора берём именно
+// текст внутри ConstructorElement (стабильный класс из UI-кита), а не
+// текст на странице целиком.
+const constructorElementText = (page: Page, text: string) =>
+  page.locator('.constructor-element__text').filter({ hasText: text });
+
 test.describe('Страница конструктора бургера', () => {
   test.beforeEach(async ({ page }) => {
     // Перехватываем все запросы к бэкенду через заранее записанные HAR-файлы.
@@ -57,8 +64,12 @@ test.describe('Страница конструктора бургера', () => 
       await gotoConstructorPage(page);
       await addIngredientByCard(page, BUN_ID);
 
-      await expect(page.getByText(`${BUN_NAME} (верх)`)).toBeVisible();
-      await expect(page.getByText(`${BUN_NAME} (низ)`)).toBeVisible();
+      await expect(
+        constructorElementText(page, `${BUN_NAME} (верх)`)
+      ).toBeVisible();
+      await expect(
+        constructorElementText(page, `${BUN_NAME} (низ)`)
+      ).toBeVisible();
     });
 
     test('добавление начинки из списка добавляет её в конструктор', async ({
@@ -67,10 +78,7 @@ test.describe('Страница конструктора бургера', () => 
       await gotoConstructorPage(page);
       await addIngredientByCard(page, MAIN_ID);
 
-      const constructorList = page.locator('ul').filter({
-        has: page.getByText(MAIN_NAME)
-      });
-      await expect(constructorList.getByText(MAIN_NAME)).toBeVisible();
+      await expect(constructorElementText(page, MAIN_NAME)).toBeVisible();
     });
 
     test('можно собрать бургер из булки и начинки', async ({ page }) => {
@@ -78,9 +86,13 @@ test.describe('Страница конструктора бургера', () => 
       await addIngredientByCard(page, BUN_ID);
       await addIngredientByCard(page, MAIN_ID);
 
-      await expect(page.getByText(`${BUN_NAME} (верх)`)).toBeVisible();
-      await expect(page.getByText(`${BUN_NAME} (низ)`)).toBeVisible();
-      await expect(page.getByText(MAIN_NAME)).toBeVisible();
+      await expect(
+        constructorElementText(page, `${BUN_NAME} (верх)`)
+      ).toBeVisible();
+      await expect(
+        constructorElementText(page, `${BUN_NAME} (низ)`)
+      ).toBeVisible();
+      await expect(constructorElementText(page, MAIN_NAME)).toBeVisible();
     });
   });
 
