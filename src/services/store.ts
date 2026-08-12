@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
 
 import {
   TypedUseSelectorHook,
@@ -6,10 +6,40 @@ import {
   useSelector as selectorHook
 } from 'react-redux';
 
-const rootReducer = () => {}; // Заменить на импорт настоящего редьюсера
+import {
+  ingredientsReducer,
+  burgerConstructorReducer,
+  orderReducer,
+  feedReducer,
+  userOrdersReducer,
+  userReducer,
+  feedWsActions,
+  userOrdersWsActions
+} from './slices';
+
+import { socketMiddleware } from './middleware/socketMiddleware';
+import { TWsOrdersData } from './slices/feedSlice';
+
+const rootReducer = combineReducers({
+  ingredients: ingredientsReducer,
+  burgerConstructor: burgerConstructorReducer,
+  order: orderReducer,
+  feed: feedReducer,
+  userOrders: userOrdersReducer,
+  user: userReducer
+});
+
+const feedSocketMiddleware = socketMiddleware<TWsOrdersData>(feedWsActions);
+const userOrdersSocketMiddleware =
+  socketMiddleware<TWsOrdersData>(userOrdersWsActions);
 
 const store = configureStore({
   reducer: rootReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(
+      feedSocketMiddleware,
+      userOrdersSocketMiddleware
+    ),
   devTools: process.env.NODE_ENV !== 'production'
 });
 
